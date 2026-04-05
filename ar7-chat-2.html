@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AR7 Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c10;
+  --bg2: #0d1219;
+  --card: #111620;
+  --card2: #161d28;
+  --border: rgba(255,255,255,0.07);
+  --accent: #e8304a;
+  --accent2: #ff6b35;
+  --text: #f0f2f5;
+  --muted: #7a8494;
+  --green: #4ade80;
+  --bubble-me: linear-gradient(135deg, #e8304a, #c8243c);
+  --bubble-other: #161d28;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+
+/* ── SCREENS ── */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;animation:fadeIn 0.35s ease;}
+.screen.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ════════════════════════
+   JOIN SCREEN
+════════════════════════ */
+#joinScreen{align-items:center;justify-content:center;padding:24px;background:var(--bg);position:relative;overflow:hidden;}
+.join-glow{position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(232,48,74,0.12),transparent 65%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.join-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse 70% 70% at 50% 50%,black 30%,transparent 100%);}
+
+.join-box{width:100%;max-width:400px;z-index:1;}
+.join-logo{text-align:center;margin-bottom:36px;}
+.logo-mark{width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;margin:0 auto 14px;box-shadow:0 12px 40px rgba(232,48,74,0.3);}
+.join-title{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;letter-spacing:-0.5px;}
+.join-sub{font-size:0.82rem;color:var(--muted);margin-top:5px;}
+
+.join-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 24px;margin-top:24px;}
+.join-card h3{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:20px;}
+
+.inp-group{margin-bottom:14px;}
+.inp-label{font-size:0.72rem;color:var(--muted);font-weight:500;margin-bottom:6px;display:block;letter-spacing:0.3px;text-transform:uppercase;}
+.inp{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:13px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.inp:focus{border-color:rgba(232,48,74,0.5);box-shadow:0 0 0 3px rgba(232,48,74,0.1);}
+.inp::placeholder{color:var(--muted);}
+
+.color-row{display:flex;gap:8px;flex-wrap:wrap;}
+.color-opt{width:32px;height:32px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform 0.15s,border-color 0.15s;}
+.color-opt.selected{border-color:white;transform:scale(1.15);}
+
+.btn-join{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:500;cursor:pointer;margin-top:6px;transition:all 0.2s;position:relative;overflow:hidden;}
+.btn-join::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.12),transparent 60%);}
+.btn-join:hover{background:#c8243c;transform:translateY(-1px);box-shadow:0 8px 24px rgba(232,48,74,0.3);}
+.btn-join:active{transform:translateY(0);}
+
+.join-note{text-align:center;font-size:0.75rem;color:var(--muted);margin-top:16px;line-height:1.6;}
+
+/* ════════════════════════
+   ROOMS SCREEN
+════════════════════════ */
+#roomsScreen{background:var(--bg);}
+.top-bar{background:rgba(8,12,16,0.95);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(20px);flex-shrink:0;}
+.top-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.15rem;}
+.top-logo span{color:var(--accent);}
+.user-chip{display:flex;align-items:center;gap:8px;}
+.user-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(74,222,128,0.6);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
+.user-name-chip{font-size:0.8rem;color:var(--muted);}
+
+.rooms-scroll{flex:1;overflow-y:auto;padding:16px;scrollbar-width:none;}
+.rooms-scroll::-webkit-scrollbar{display:none;}
+
+.section-hd{font-size:0.65rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);font-weight:700;margin:8px 0 10px;}
+
+.room-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;cursor:pointer;transition:all 0.2s;}
+.room-item:hover,.room-item:active{background:var(--card2);border-color:rgba(232,48,74,0.2);transform:translateX(4px);}
+.room-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.room-info{flex:1;min-width:0;}
+.room-name{font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:700;}
+.room-desc{font-size:0.75rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.room-arrow{color:var(--muted);font-size:1rem;}
+
+.online-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 0 14px;scrollbar-width:none;margin-bottom:4px;}
+.online-strip::-webkit-scrollbar{display:none;}
+.online-user{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;}
+.online-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;border:2px solid var(--bg);position:relative;}
+.online-avatar::after{content:'';position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:var(--green);border-radius:50%;border:2px solid var(--bg);}
+.online-uname{font-size:0.6rem;color:var(--muted);max-width:44px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+.create-room-btn{width:100%;background:transparent;border:1px dashed rgba(232,48,74,0.3);color:var(--accent);padding:13px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:0.88rem;cursor:pointer;transition:all 0.2s;margin-top:4px;}
+.create-room-btn:hover{background:rgba(232,48,74,0.05);border-color:rgba(232,48,74,0.5);}
+
+/* create room modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);}
+.modal-bg.active{display:flex;}
+.modal-sheet{background:var(--card);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:500px;animation:slideUp 0.3s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.modal-sheet h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:18px;}
+.emoji-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.emoji-opt{width:40px;height:40px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;cursor:pointer;transition:all 0.15s;}
+.emoji-opt.selected{background:rgba(232,48,74,0.15);border-color:rgba(232,48,74,0.4);}
+.modal-actions{display:flex;gap:10px;margin-top:6px;}
+.btn-cancel{flex:1;background:transparent;border:1px solid var(--border);color:var(--text);padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;cursor:pointer;}
+.btn-create{flex:2;background:var(--accent);color:#fff;border:none;padding:13px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:500;cursor:pointer;}
+
+/* ════════════════════════
+   CHAT SCREEN
+════════════════════════ */
+#chatScreen{background:var(--bg);}
+.chat-top{background:rgba(8,12,16,0.95);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;backdrop-filter:blur(20px);}
+.back-btn{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 8px 4px 0;}
+.chat-room-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.chat-room-info{flex:1;}
+.chat-room-name{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;}
+.chat-online-count{font-size:0.7rem;color:var(--green);margin-top:1px;}
+
+.messages-area{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;scrollbar-width:none;}
+.messages-area::-webkit-scrollbar{display:none;}
+
+/* date divider */
+.date-divider{text-align:center;font-size:0.68rem;color:var(--muted);margin:8px 0;position:relative;}
+.date-divider::before,.date-divider::after{content:'';position:absolute;top:50%;width:30%;height:1px;background:var(--border);}
+.date-divider::before{left:0;}
+.date-divider::after{right:0;}
+
+/* messages */
+.msg-wrap{display:flex;align-items:flex-end;gap:8px;max-width:82%;}
+.msg-wrap.me{align-self:flex-end;flex-direction:row-reverse;}
+.msg-wrap.other{align-self:flex-start;}
+
+.msg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;flex-shrink:0;}
+.msg-content{display:flex;flex-direction:column;gap:3px;}
+.msg-wrap.me .msg-content{align-items:flex-end;}
+
+.msg-sender{font-size:0.65rem;color:var(--muted);margin-bottom:1px;padding:0 6px;}
+.msg-bubble{padding:10px 14px;border-radius:18px;font-size:0.88rem;line-height:1.55;word-break:break-word;max-width:100%;}
+.msg-wrap.me .msg-bubble{background:var(--bubble-me);color:#fff;border-bottom-right-radius:4px;box-shadow:0 4px 16px rgba(232,48,74,0.25);}
+.msg-wrap.other .msg-bubble{background:var(--bubble-other);color:var(--text);border-bottom-left-radius:4px;border:1px solid var(--border);}
+.msg-time{font-size:0.6rem;color:var(--muted);padding:0 6px;}
+
+/* system message */
+.sys-msg{text-align:center;font-size:0.72rem;color:var(--muted);background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:100px;padding:5px 14px;align-self:center;max-width:80%;}
+
+/* typing indicator */
+.typing-indicator{display:none;align-items:center;gap:6px;padding:0 4px;}
+.typing-indicator.show{display:flex;}
+.typing-dots{display:flex;gap:4px;}
+.typing-dots span{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:typingDot 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:0.2s;}
+.typing-dots span:nth-child(3){animation-delay:0.4s;}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
+.typing-text{font-size:0.72rem;color:var(--muted);}
+
+/* input bar */
+.chat-input-bar{background:rgba(8,12,16,0.95);border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:flex-end;gap:10px;flex-shrink:0;backdrop-filter:blur(20px);}
+.msg-input-wrap{flex:1;background:var(--card);border:1px solid var(--border);border-radius:22px;display:flex;align-items:flex-end;padding:8px 14px;transition:border-color 0.2s;}
+.msg-input-wrap:focus-within{border-color:rgba(232,48,74,0.4);}
+.msg-input{flex:1;background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;resize:none;max-height:100px;line-height:1.4;padding:2px 0;}
+.msg-input::placeholder{color:var(--muted);}
+.emoji-btn{background:none;border:none;font-size:1.1rem;cursor:pointer;padding:0 6px 0 0;color:var(--muted);}
+.send-btn{width:42px;height:42px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.send-btn:hover{background:#c8243c;transform:scale(1.05);}
+.send-btn:active{transform:scale(0.95);}
+
+/* toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 22px;font-size:0.82rem;font-weight:500;z-index:999;opacity:0;transition:all 0.3s;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:rgba(74,222,128,0.4);color:var(--green);}
+.toast.err{border-color:rgba(232,48,74,0.4);color:#ff7088;}
+
+/* loading */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+.loading-overlay.hidden{display:none;}
+.loader{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-overlay p{font-size:0.82rem;color:var(--muted);}
+
+/* emoji picker simple */
+.emoji-picker{position:fixed;bottom:70px;left:14px;right:14px;max-width:400px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;display:none;z-index:100;grid-template-columns:repeat(8,1fr);gap:6px;}
+.emoji-picker.show{display:grid;}
+.ep-emoji{background:none;border:none;font-size:1.3rem;cursor:pointer;border-radius:8px;padding:4px;transition:background 0.15s;}
+.ep-emoji:hover{background:var(--bg2);}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader"></div>
+  <p>Connecting to AR7 Chat...</p>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- EMOJI PICKER -->
+<div class="emoji-picker" id="emojiPicker">
+  <button class="ep-emoji" onclick="insertEmoji('😀')">😀</button>
+  <button class="ep-emoji" onclick="insertEmoji('😂')">😂</button>
+  <button class="ep-emoji" onclick="insertEmoji('🥰')">🥰</button>
+  <button class="ep-emoji" onclick="insertEmoji('😎')">😎</button>
+  <button class="ep-emoji" onclick="insertEmoji('🔥')">🔥</button>
+  <button class="ep-emoji" onclick="insertEmoji('👑')">👑</button>
+  <button class="ep-emoji" onclick="insertEmoji('💯')">💯</button>
+  <button class="ep-emoji" onclick="insertEmoji('🚀')">🚀</button>
+  <button class="ep-emoji" onclick="insertEmoji('❤️')">❤️</button>
+  <button class="ep-emoji" onclick="insertEmoji('💪')">💪</button>
+  <button class="ep-emoji" onclick="insertEmoji('👍')">👍</button>
+  <button class="ep-emoji" onclick="insertEmoji('😭')">😭</button>
+  <button class="ep-emoji" onclick="insertEmoji('🤣')">🤣</button>
+  <button class="ep-emoji" onclick="insertEmoji('😍')">😍</button>
+  <button class="ep-emoji" onclick="insertEmoji('🤔')">🤔</button>
+  <button class="ep-emoji" onclick="insertEmoji('😴')">😴</button>
+  <button class="ep-emoji" onclick="insertEmoji('🎮')">🎮</button>
+  <button class="ep-emoji" onclick="insertEmoji('🏆')">🏆</button>
+  <button class="ep-emoji" onclick="insertEmoji('💰')">💰</button>
+  <button class="ep-emoji" onclick="insertEmoji('🇧🇩')">🇧🇩</button>
+  <button class="ep-emoji" onclick="insertEmoji('✨')">✨</button>
+  <button class="ep-emoji" onclick="insertEmoji('🌙')">🌙</button>
+  <button class="ep-emoji" onclick="insertEmoji('⚡')">⚡</button>
+  <button class="ep-emoji" onclick="insertEmoji('🎯')">🎯</button>
+</div>
+
+<!-- ══════════════════
+     JOIN SCREEN
+══════════════════ -->
+<div class="screen active" id="joinScreen">
+  <div class="join-glow"></div>
+  <div class="join-grid"></div>
+  <div class="join-box">
+    <div class="join-logo">
+      <div class="logo-mark">💬</div>
+      <div class="join-title">AR7 Chat</div>
+      <div class="join-sub">Private · Real-time · Just for us</div>
+    </div>
+
+    <div class="join-card">
+      <h3>Who are you? 👤</h3>
+      <div class="inp-group">
+        <label class="inp-label">Your Name</label>
+        <input class="inp" id="nameInp" type="text" placeholder="e.g. Ariyan, Aksa, Mama..." maxlength="20" autocomplete="off">
+      </div>
+      <div class="inp-group">
+        <label class="inp-label">Your Color</label>
+        <div class="color-row" id="colorRow">
+          <div class="color-opt selected" style="background:#e8304a;" data-color="#e8304a" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#ff6b35;" data-color="#ff6b35" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#f59e0b;" data-color="#f59e0b" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#10b981;" data-color="#10b981" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#3b82f6;" data-color="#3b82f6" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#8b5cf6;" data-color="#8b5cf6" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#ec4899;" data-color="#ec4899" onclick="selectColor(this)"></div>
+          <div class="color-opt" style="background:#06b6d4;" data-color="#06b6d4" onclick="selectColor(this)"></div>
+        </div>
+      </div>
+      <button class="btn-join" onclick="joinChat()">Enter Chat 🚀</button>
+    </div>
+    <p class="join-note">🔒 This chat is private. Share the link only with people you trust.</p>
+  </div>
+</div>
+
+<!-- ══════════════════
+     ROOMS SCREEN
+══════════════════ -->
+<div class="screen" id="roomsScreen">
+  <div class="top-bar">
+    <div class="top-logo">AR<span>7</span> Chat</div>
+    <div class="user-chip">
+      <div class="user-dot"></div>
+      <span class="user-name-chip" id="topUserName">—</span>
+    </div>
+  </div>
+
+  <div class="rooms-scroll">
+    <!-- Online users -->
+    <div class="section-hd">Online Now</div>
+    <div class="online-strip" id="onlineStrip">
+      <div class="online-user">
+        <div class="online-avatar" style="background:#e8304a;" id="myOnlineAvatar">?</div>
+        <div class="online-uname" id="myOnlineName">You</div>
+      </div>
+    </div>
+
+    <!-- Rooms -->
+    <div class="section-hd">Chat Rooms</div>
+    <div id="roomsList"></div>
+    <button class="create-room-btn" onclick="openCreateRoom()">+ Create New Room</button>
+  </div>
+</div>
+
+<!-- Create Room Modal -->
+<div class="modal-bg" id="createRoomModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3>Create a Room 🏠</h3>
+    <div class="inp-group">
+      <label class="inp-label">Room Name</label>
+      <input class="inp" id="roomNameInp" placeholder="e.g. Family, Friends, AR7 Squad..." maxlength="30">
+    </div>
+    <div class="inp-group">
+      <label class="inp-label">Pick an Emoji</label>
+      <div class="emoji-grid" id="emojiGrid">
+        <div class="emoji-opt selected" data-emoji="💬" onclick="selectEmoji(this)">💬</div>
+        <div class="emoji-opt" data-emoji="👨‍👩‍👧‍👦" onclick="selectEmoji(this)">👨‍👩‍👧‍👦</div>
+        <div class="emoji-opt" data-emoji="🎮" onclick="selectEmoji(this)">🎮</div>
+        <div class="emoji-opt" data-emoji="🔥" onclick="selectEmoji(this)">🔥</div>
+        <div class="emoji-opt" data-emoji="👑" onclick="selectEmoji(this)">👑</div>
+        <div class="emoji-opt" data-emoji="🚀" onclick="selectEmoji(this)">🚀</div>
+        <div class="emoji-opt" data-emoji="🎯" onclick="selectEmoji(this)">🎯</div>
+        <div class="emoji-opt" data-emoji="⚡" onclick="selectEmoji(this)">⚡</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreateRoom()">Cancel</button>
+      <button class="btn-create" onclick="createRoom()">Create Room ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════
+     CHAT SCREEN
+══════════════════ -->
+<div class="screen" id="chatScreen">
+  <div class="chat-top">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="chat-room-icon" id="chatRoomIcon">💬</div>
+    <div class="chat-room-info">
+      <div class="chat-room-name" id="chatRoomName">Room</div>
+      <div class="chat-online-count" id="chatOnlineCount">● Online</div>
+    </div>
+  </div>
+
+  <div class="messages-area" id="messagesArea">
+    <div class="date-divider">Today</div>
+  </div>
+
+  <div class="typing-indicator" id="typingIndicator">
+    <div class="typing-dots"><span></span><span></span><span></span></div>
+    <div class="typing-text" id="typingText">someone is typing...</div>
+  </div>
+
+  <div class="chat-input-bar">
+    <div class="msg-input-wrap">
+      <button class="emoji-btn" onclick="toggleEmojiPicker()">😊</button>
+      <textarea class="msg-input" id="msgInput" placeholder="Type a message..." rows="1" oninput="autoResize(this);handleTyping();" onkeydown="handleKeyDown(event)"></textarea>
+    </div>
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, set, remove, onValue, serverTimestamp, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIg2_j4RxJ5byA3F-2ZG3HgB2l48rgPz0",
+  authDomain: "family-37464.firebaseapp.com",
+  projectId: "family-37464",
+  storageBucket: "family-37464.firebasestorage.app",
+  messagingSenderId: "436692338146",
+  appId: "1:436692338146:web:875d019c603b00020525bb",
+  databaseURL: "https://family-37464-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── STATE ──
+let me = { name: '', color: '#e8304a', id: '' };
+let currentRoom = null;
+let messagesUnsub = null;
+let onlineUnsub = null;
+let roomsUnsub = null;
+let typingTimer = null;
+let selectedRoomEmoji = '💬';
+
+// ── HELPERS ──
+window.showToast = (msg, type='ok') => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2800);
+};
+
+const initials = (name) => name.slice(0,2).toUpperCase();
+const genId = () => Math.random().toString(36).slice(2,10);
+const fmt = (ts) => {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+};
+
+// ── COLOR SELECTION ──
+window.selectColor = (el) => {
+  document.querySelectorAll('.color-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  me.color = el.dataset.color;
+};
+
+// ── EMOJI PICKER ──
+window.toggleEmojiPicker = () => {
+  document.getElementById('emojiPicker').classList.toggle('show');
+};
+window.insertEmoji = (emoji) => {
+  const inp = document.getElementById('msgInput');
+  inp.value += emoji;
+  inp.focus();
+  document.getElementById('emojiPicker').classList.remove('show');
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest('#emojiPicker') && !e.target.closest('.emoji-btn')) {
+    document.getElementById('emojiPicker').classList.remove('show');
+  }
+});
+
+// ── JOIN ──
+window.joinChat = async () => {
+  const name = document.getElementById('nameInp').value.trim();
+  if (!name) { showToast('নাম দাও আগে!','err'); return; }
+  me.name = name;
+  me.id = genId();
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  try {
+    // set online presence
+    const onlineRef = ref(db, 'online/' + me.id);
+    await set(onlineRef, { name: me.name, color: me.color, joinedAt: Date.now() });
+    // remove on disconnect
+    const { onDisconnect } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+    onDisconnect(onlineRef).remove();
+
+    document.getElementById('topUserName').textContent = me.name;
+    document.getElementById('myOnlineAvatar').textContent = initials(me.name);
+    document.getElementById('myOnlineAvatar').style.background = me.color;
+    document.getElementById('myOnlineName').textContent = 'You';
+    await seedRooms();
+    showScreen('roomsScreen');
+    listenRooms();
+    listenOnline();
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    showToast('Connection failed. Check internet.','err');
+  }
+};
+
+// seed default rooms
+async function seedRooms() {
+  const snap = await get(ref(db,'meta/seeded'));
+  if (snap.exists()) return;
+  const defaults = [
+    { name:'Family', emoji:'👨‍👩‍👧‍👦', desc:'Our family chat room' },
+    { name:'Friends', emoji:'🔥', desc:'Squad talk' },
+    { name:'AR7 Gang', emoji:'👑', desc:"AR7's inner circle" },
+  ];
+  for (const r of defaults) {
+    const newRef = push(ref(db,'rooms'));
+    await set(newRef, { ...r, createdAt: Date.now() });
+  }
+  await set(ref(db,'meta/seeded'), true);
+}
+
+// ── LISTEN ROOMS ──
+function listenRooms() {
+  onValue(ref(db,'rooms'), snap => {
+    const list = document.getElementById('roomsList');
+    list.innerHTML = '';
+    if (!snap.exists()) return;
+    const rooms = [];
+    snap.forEach(child => rooms.push({ id: child.key, ...child.val() }));
+    rooms.sort((a,b) => (a.createdAt||0)-(b.createdAt||0));
+    rooms.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'room-item';
+      div.innerHTML = `
+        <div class="room-icon" style="background:rgba(232,48,74,0.1)">${r.emoji||'💬'}</div>
+        <div class="room-info">
+          <div class="room-name">${r.name}</div>
+          <div class="room-desc">${r.desc||'Tap to open'}</div>
+        </div>
+        <div class="room-arrow">›</div>`;
+      div.onclick = () => openRoom(r);
+      list.appendChild(div);
+    });
+  });
+}
+
+// ── LISTEN ONLINE ──
+function listenOnline() {
+  onValue(ref(db,'online'), snap => {
+    const strip = document.getElementById('onlineStrip');
+    const myAv = document.getElementById('myOnlineAvatar').parentElement;
+    strip.innerHTML = '';
+    strip.appendChild(myAv);
+    let count = 1;
+    if (snap.exists()) {
+      snap.forEach(child => {
+        if (child.key === me.id) return;
+        const u = child.val();
+        count++;
+        const div = document.createElement('div');
+        div.className = 'online-user';
+        div.innerHTML = `<div class="online-avatar" style="background:${u.color||'#888'}">${initials(u.name)}</div><div class="online-uname">${u.name}</div>`;
+        strip.appendChild(div);
+      });
+    }
+    if (currentRoom) document.getElementById('chatOnlineCount').textContent = `● ${count} online`;
+  });
+}
+
+// ── ROOM EMOJI ──
+window.selectEmoji = (el) => {
+  document.querySelectorAll('.emoji-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRoomEmoji = el.dataset.emoji;
+};
+
+window.openCreateRoom = () => { document.getElementById('createRoomModal').classList.add('active'); };
+window.closeCreateRoom = () => { document.getElementById('createRoomModal').classList.remove('active'); };
+
+window.createRoom = async () => {
+  const name = document.getElementById('roomNameInp').value.trim();
+  if (!name) { showToast('Room name দাও!','err'); return; }
+  const newRef = push(ref(db,'rooms'));
+  await set(newRef, { name, emoji: selectedRoomEmoji, desc: `Created by ${me.name}`, createdAt: Date.now() });
+  document.getElementById('roomNameInp').value = '';
+  closeCreateRoom();
+  showToast('Room created! 🎉','ok');
+};
+
+// ── OPEN ROOM ──
+window.openRoom = (room) => {
+  currentRoom = room;
+  document.getElementById('chatRoomIcon').textContent = room.emoji||'💬';
+  document.getElementById('chatRoomName').textContent = room.name;
+  document.getElementById('messagesArea').innerHTML = '<div class="date-divider">Today</div>';
+  showScreen('chatScreen');
+  listenMessages(room.id);
+  sendSystemMsg(`${me.name} joined the room`);
+};
+
+// ── LISTEN MESSAGES ──
+const renderedMsgs = new Set();
+function listenMessages(roomId) {
+  if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+  renderedMsgs.clear();
+  const msgsRef = ref(db, `rooms/${roomId}/messages`);
+  messagesUnsub = onChildAdded(msgsRef, snap => {
+    if (renderedMsgs.has(snap.key)) return;
+    renderedMsgs.add(snap.key);
+    renderMessage({ id: snap.key, ...snap.val() });
+    scrollBottom();
+  });
+
+  // typing
+  onValue(ref(db, `rooms/${roomId}/typing`), snap => {
+    const others = [];
+    if (snap.exists()) snap.forEach(c => { if (c.key !== me.id) others.push(c.val().name); });
+    const ti = document.getElementById('typingIndicator');
+    if (others.length > 0) {
+      ti.classList.add('show');
+      document.getElementById('typingText').textContent = others.join(', ') + (others.length===1?' is':' are') + ' typing...';
+    } else { ti.classList.remove('show'); }
+  });
+}
+
+// ── RENDER MESSAGE ──
+function renderMessage(msg) {
+  const area = document.getElementById('messagesArea');
+  const isMe = msg.senderId === me.id;
+  if (msg.type === 'system') {
+    const div = document.createElement('div');
+    div.className = 'sys-msg';
+    div.textContent = msg.text;
+    area.appendChild(div);
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (isMe?'me':'other');
+  const timeStr = msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}) : '';
+  wrap.innerHTML = `
+    ${!isMe ? `<div class="msg-av" style="background:${msg.color||'#888'}">${initials(msg.sender)}</div>` : ''}
+    <div class="msg-content">
+      ${!isMe ? `<div class="msg-sender">${msg.sender}</div>` : ''}
+      <div class="msg-bubble">${escHtml(msg.text)}</div>
+      <div class="msg-time">${timeStr}</div>
+    </div>
+    ${isMe ? `<div class="msg-av" style="background:${me.color}">${initials(me.name)}</div>` : ''}`;
+  area.appendChild(wrap);
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function sendSystemMsg(text) {
+  if (!currentRoom) return;
+  const newRef = push(ref(db, `rooms/${currentRoom.id}/messages`));
+  await set(newRef, { type:'system', text, createdAt: Date.now() });
+}
+
+// ── SEND MESSAGE ──
+window.sendMessage = async () => {
+  const inp = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  if (!text || !currentRoom) return;
+  inp.value = '';
+  autoResize(inp);
+  clearTyping();
+  const newRef = push(ref(db, `rooms/${currentRoom.id}/messages`));
+  await set(newRef, { text, sender: me.name, senderId: me.id, color: me.color, createdAt: Date.now() });
+};
+
+window.handleKeyDown = (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+};
+
+// ── TYPING ──
+window.handleTyping = async () => {
+  if (!currentRoom) return;
+  await set(ref(db, `rooms/${currentRoom.id}/typing/${me.id}`), { name: me.name });
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(clearTyping, 2500);
+};
+
+async function clearTyping() {
+  if (!currentRoom) return;
+  try { await remove(ref(db, `rooms/${currentRoom.id}/typing/${me.id}`)); } catch{}
+}
+
+// ── BACK ──
+window.goBack = async () => {
+  await clearTyping();
+  if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+  await sendSystemMsg(`${me.name} left the room`);
+  currentRoom = null;
+  showScreen('roomsScreen');
+};
+
+// ── UTILS ──
+window.autoResize = (el) => {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+};
+
+function scrollBottom() {
+  const area = document.getElementById('messagesArea');
+  area.scrollTop = area.scrollHeight;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// cleanup
+window.addEventListener('beforeunload', () => {
+  try { remove(ref(db,'online/'+me.id)); } catch{}
+});
+
+// hide loading
+document.getElementById('loadingOverlay').classList.add('hidden');
+</script>
+</body>
+</html>
